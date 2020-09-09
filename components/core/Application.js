@@ -85,7 +85,7 @@ const SCENES = {
   LOCAL_DATA: <SceneLocalData />,
   NETWORK: <SceneSentinel />,
   DIRECTORY: <SceneDirectory />,
-  ARCHIVE: <SceneArchive />,
+  FILECOIN: <SceneArchive />,
 };
 
 export default class ApplicationPage extends React.Component {
