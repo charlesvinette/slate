@@ -1,8 +1,43 @@
 import * as React from "react";
+import * as Constants from "~/common/constants";
 
-import CreateChart from "~/components/stats/CreateChart";
+import { css } from "@emotion/react";
+
+const STYLES_GRAPH_CONTAINER = css`
+  display: flex;
+`;
+
+const STYLES_GRAPH = css`
+  height: 600px;
+  margin: auto;
+  background-image: linear-gradient(${Constants.system.pitchBlack}, ${Constants.system.slate});
+`;
+
+const STYLES_X_LINE = css`
+  stroke: ${Constants.system.wall};
+`;
+
+const STYLES_CHART_CIRCLE = css`
+  stroke: none;
+  fill: ${Constants.system.blue};
+`;
+
+const STYLES_CHART_LINE = css`
+  stroke: ${Constants.system.blue};
+  fill: none;
+`;
+
+const STYLES_CHART_TEXT = css`
+  font-size: ${Constants.typescale.lvl1};
+  fill: ${Constants.system.white};
+  font-family: ${Constants.font.text};
+`;
 
 export default class Chart extends React.Component {
+  constructor(props) {
+    super(props);
+    this.myRef = React.createRef();
+  }
   state = {
     minX: {},
     maxX: {},
@@ -15,6 +50,7 @@ export default class Chart extends React.Component {
     xLabel: {},
     yLabel: {},
     organizedData: [],
+    circles: [],
   };
 
   componentDidMount() {
@@ -26,7 +62,24 @@ export default class Chart extends React.Component {
     this.getMaxY();
     this.sepCategories();
     this.getTicks();
+
   }
+
+  //Reference used by createTicks to display shorter month names
+  monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   //Set Axis Labels
   getXLabel() {
@@ -204,26 +257,91 @@ export default class Chart extends React.Component {
     }
   }
 
-  render() {
-    if (this.state.organizedData.length) {
-      return (
-        <React.Fragment>
-          <CreateChart
-            minX={this.state.minX}
-            maxX={this.state.maxX}
-            minY={this.state.minY}
-            maxY={this.state.maxY}
-            deltaX={this.state.deltaX}
-            deltaY={this.state.deltaY}
-            ticks={this.state.ticks}
-            xLabel={this.state.xLabel}
-            yLabel={this.state.yLabel}
-            organizedData={this.state.organizedData}
-          />
-        </React.Fragment>
-      );
-    } else {
-      return <React.Fragment></React.Fragment>;
+  //Begin line chart render methods
+
+/*   createGrid = () => {
+    const maxX = Date.parse(this.getMaxX());
+    const minX = Date.parse(this.getMinX());
+    const { gridLines } = this.props;
+    const { xWall } = this.props;
+    let diffX = maxX - minX;
+    let dX = xWall / diffX;
+    //let bufferY = (600 - yCeiling) / 2;
+    let bufferX = (600 - xWall) / 2;
+    const beginX = (Math.floor(minX) + bufferX) * dX
+    const endX = (Math.floor(maxX) - bufferX) * dX
+    let spacing = (beginX - endX)/gridLines;
+    const gLines = [];
+    for(let gridX = beginX; gridX > endX; gridX+= spacing){
+      gLines.push(gridX);
+      console.log(gridX);
     }
+    return null;
+  } */
+
+  drawPoints = (a) => {
+    const c = a.toString();
+    const regex = /([0-9]+),\s([0-9]+),\s/g;
+    const cOrganized = c.replace(regex, "$1,$2 ");
+    return cOrganized;
+  };
+
+
+render() {
+
+    return (
+      <div css={STYLES_GRAPH_CONTAINER}>
+        <svg css={STYLES_GRAPH} viewBox="0 0 600 600">
+          <defs>
+            <linearGradient id="backgroundGradient" x1="0" y1="100%" x2="0" y2="0">
+                <stop offset="0%" stop-color={Constants.system.pitchBlack} />
+                <stop offset="100%" stop-color={Constants.system.slate} />
+            </linearGradient>
+          </defs>
+          <g id="circles"></g>
+          {this.state.organizedData.flat(2).map((g, index) => {
+            return (
+              <circle key={index} cx={g.x} cy={g.y} r="2" css={STYLES_CHART_CIRCLE} />
+            );
+          })}
+          <g id="lines"></g>
+            {this.state.organizedData.flat().map( lines => {
+              let coordinates = []; 
+              let i = {};
+              for (let line of lines) {
+                  coordinates.push(line.x);
+                  coordinates.push(line.y);
+                  i[`id`] = line.id;
+                };
+              return (
+                <polyline
+                css={STYLES_CHART_LINE}
+                key={i.id}
+                points={this.drawPoints(coordinates)}
+              />
+              )
+              })}
+          <g>
+            <line css={STYLES_X_LINE} x1="25" y1="550" x2="575" y2="550" />
+          </g>
+          <g id="tickContainer">
+          {this.state.ticks.flat().map((tick, index) => {
+            const tDate = new Date(tick.date);
+            const month = this.monthNames[tDate.getMonth()];
+            const year = tDate.getUTCFullYear();
+
+            return (
+              <g>
+              <line css={STYLES_X_LINE} x1={tick.x} y1="550" x2={tick.x} y2="560" />
+              <text css={STYLES_CHART_TEXT} textAnchor="middle" x={tick.x} y="575">
+                {`${month} ${year}`}
+              </text>
+            </g>
+            )
+          })}
+          </g>
+        </svg>
+      </div>
+    );
   }
 }
