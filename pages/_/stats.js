@@ -41,6 +41,9 @@ const yCeiling = 400;
 //Use this to choose how much of the chart is filled horizontally displayMax = 550
 const xWall = 500;
 
+//Use this to change how many lines create grid in graph 
+const gridLineCount = 10
+
 import { css } from "@emotion/react";
 
 const STYLES_ROW = css`
@@ -437,6 +440,7 @@ export default class StatsPage extends React.Component {
         <Section title="Node">
           <Chart
             data={data}
+            gridLineCount={gridLineCount}
             maxTicks={tickNumber}
             yCeiling={yCeiling}
             xWall={xWall}

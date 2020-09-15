@@ -13,9 +13,14 @@ const STYLES_GRAPH = css`
   background-image: linear-gradient(${Constants.system.pitchBlack}, ${Constants.system.slate});
 `;
 
-const STYLES_X_LINE = css`
+const STYLES_AXIS_LINE = css`
   stroke: ${Constants.system.wall};
 `;
+
+const STYLES_GRID_LINE = css `
+  stroke: ${Constants.system.moonstone};
+  z-index: 0;
+`
 
 const STYLES_CHART_CIRCLE = css`
   stroke: none;
@@ -51,18 +56,19 @@ export default class Chart extends React.Component {
     yLabel: {},
     organizedData: [],
     circles: [],
+    gridPoints: [],
   };
 
   componentDidMount() {
     this.getXLabel();
     this.getYLabel();
-    this.getMinX();
+    this.getMinX(); 
     this.getMaxX();
     this.getMinY();
     this.getMaxY();
     this.sepCategories();
     this.getTicks();
-
+    this.createGridLines();
   }
 
   //Reference used by createTicks to display shorter month names
@@ -257,27 +263,19 @@ export default class Chart extends React.Component {
     }
   }
 
-  //Begin line chart render methods
-
-/*   createGrid = () => {
-    const maxX = Date.parse(this.getMaxX());
-    const minX = Date.parse(this.getMinX());
-    const { gridLines } = this.props;
+  createGridLines = () => {
+    const { gridLineCount } = this.props;
     const { xWall } = this.props;
-    let diffX = maxX - minX;
-    let dX = xWall / diffX;
-    //let bufferY = (600 - yCeiling) / 2;
+    let spacer = xWall / gridLineCount;
     let bufferX = (600 - xWall) / 2;
-    const beginX = (Math.floor(minX) + bufferX) * dX
-    const endX = (Math.floor(maxX) - bufferX) * dX
-    let spacing = (beginX - endX)/gridLines;
-    const gLines = [];
-    for(let gridX = beginX; gridX > endX; gridX+= spacing){
-      gLines.push(gridX);
-      console.log(gridX);
+    let gridLines = []
+    for(let i = 0; i < gridLineCount; i++) {
+      gridLines.push((spacer * i) + bufferX);
     }
-    return null;
-  } */
+    this.setState((prevState) => ({
+      gridPoints: [...prevState.gridPoints, gridLines],
+    }));
+  }
 
   drawPoints = (a) => {
     const c = a.toString();
@@ -298,12 +296,36 @@ render() {
                 <stop offset="100%" stop-color={Constants.system.slate} />
             </linearGradient>
           </defs>
-          <g id="circles"></g>
+          <g id="grid">
+          {this.state.gridPoints.flat().map( g => {
+            return (
+              <line css={STYLES_GRID_LINE} x1={g} y1="550" x2={g} y2="50" />
+            )
+          })}
+          </g>
+          <g id="tickContainer">
+          {this.state.ticks.flat().map((tick, index) => {
+            const tDate = new Date(tick.date);
+            const month = this.monthNames[tDate.getMonth()];
+            const year = tDate.getUTCFullYear();
+
+            return (
+              <g>
+              <line css={STYLES_AXIS_LINE} x1={tick.x} y1="550" x2={tick.x} y2="560" />
+              <text css={STYLES_CHART_TEXT} textAnchor="middle" x={tick.x} y="575">
+                {`${month} ${year}`}
+              </text>
+            </g>
+            )
+          })}
+          </g>
+          <g id="circles">
           {this.state.organizedData.flat(2).map((g, index) => {
             return (
               <circle key={index} cx={g.x} cy={g.y} r="2" css={STYLES_CHART_CIRCLE} />
             );
           })}
+          </g>
           <g id="lines"></g>
             {this.state.organizedData.flat().map( lines => {
               let coordinates = []; 
@@ -322,23 +344,8 @@ render() {
               )
               })}
           <g>
-            <line css={STYLES_X_LINE} x1="25" y1="550" x2="575" y2="550" />
-          </g>
-          <g id="tickContainer">
-          {this.state.ticks.flat().map((tick, index) => {
-            const tDate = new Date(tick.date);
-            const month = this.monthNames[tDate.getMonth()];
-            const year = tDate.getUTCFullYear();
-
-            return (
-              <g>
-              <line css={STYLES_X_LINE} x1={tick.x} y1="550" x2={tick.x} y2="560" />
-              <text css={STYLES_CHART_TEXT} textAnchor="middle" x={tick.x} y="575">
-                {`${month} ${year}`}
-              </text>
-            </g>
-            )
-          })}
+            <line css={STYLES_AXIS_LINE} x1="25" y1="550" x2="25" y2="50"/>
+            <line css={STYLES_AXIS_LINE} x1="25" y1="550" x2="575" y2="550" />
           </g>
         </svg>
       </div>
